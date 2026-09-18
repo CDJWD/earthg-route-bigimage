@@ -32,6 +32,7 @@ PLACES_PATH = os.path.join(SKILL_DIR, "places.json")
 ROUTE_URL = os.environ.get("ROUTE_URL", "https://map.earthg.cn:7023/api/route")
 # 外网专用：只用 map.earthg.cn:8311，不用内网
 BIGIMAGE_HOST = os.environ.get("BIGIMAGE_HOST", "https://map.earthg.cn:8311").rstrip("/")
+# 可选：服务端「瓦片收费=false」时可不传；收费开启时 bigimage GET 需要有效 tk
 TK = os.environ.get("BIGIMAGE_TK", "").strip()
 
 CTX = ssl._create_unverified_context()
@@ -271,12 +272,16 @@ def bounds_of_geojson(gj: dict, pad_ratio: float = 0.08) -> Tuple[float, float, 
     )
 
 
+def tk_qs() -> str:
+    return f"&tk={urllib.parse.quote(TK)}" if TK else ""
+
+
 def pick_bigimage_host() -> str:
     host = BIGIMAGE_HOST
     if "192.168." in host or host.startswith("http://10."):
         raise RuntimeError(f"禁止内网 BigImage 地址，请用 https://map.earthg.cn:8311，当前={host}")
     try:
-        url = f"{host}/bigimage?l1=104.06&l2=104.07&b1=30.65&b2=30.66&layer=15&tk={TK}"
+        url = f"{host}/bigimage?l1=104.06&l2=104.07&b1=30.65&b2=30.66&layer=15{tk_qs()}"
         http_bytes("GET", url, timeout=30)
         return host
     except Exception as e:
@@ -294,18 +299,18 @@ def submit_and_download(
     title: str,
     basemap: str = "google",
 ) -> str:
-    qs = urllib.parse.urlencode(
-        {
-            "name": name,
-            "tk": TK,
-            "layer": str(layer),
-            "format": "geojson",
-            "label": label,
-            "grid": grid,
-            "title": title,
-            "basemap": basemap,
-        }
-    )
+    qs_dict = {
+        "name": name,
+        "layer": str(layer),
+        "format": "geojson",
+        "label": label,
+        "grid": grid,
+        "title": title,
+        "basemap": basemap,
+    }
+    if TK:
+        qs_dict["tk"] = TK
+    qs = urllib.parse.urlencode(qs_dict)
     body = json.dumps(geojson, ensure_ascii=False).encode("utf-8")
     post_url = f"{host}/bigimage?{qs}"
     resp = http_bytes(
@@ -323,12 +328,12 @@ def submit_and_download(
     for i in range(90):
         time.sleep(2)
         st = http_bytes(
-            "GET", f"{host}/bigimage?method=getstate&name={urllib.parse.quote(name)}&tk={TK}", timeout=60
+            "GET", f"{host}/bigimage?method=getstate&name={urllib.parse.quote(name)}{tk_qs()}", timeout=60
         ).decode("utf-8", "ignore")
         if i % 5 == 0:
             print("state", st[:120], flush=True)
         data = http_bytes(
-            "GET", f"{host}/bigimage?method=getfile&name={urllib.parse.quote(name)}&tk={TK}", timeout=120
+            "GET", f"{host}/bigimage?method=getfile&name={urllib.parse.quote(name)}{tk_qs()}", timeout=120
         )
         if data[:2] == b"\xff\xd8" and len(data) > 2000:
             os.makedirs(os.path.dirname(out_path) or ".", exist_ok=True)
@@ -340,16 +345,7 @@ def submit_and_download(
     raise TimeoutError("等待 BigImage 超时")
 
 
-def require_tk() -> str:
-    if not TK:
-        raise RuntimeError(
-            "未设置 BIGIMAGE_TK。请先设置环境变量，例如 PowerShell: $env:BIGIMAGE_TK='你的地图TK'"
-        )
-    return TK
-
-
 def main() -> int:
-    require_tk()
     ap = argparse.ArgumentParser(description="路线计算 + BigImage 出图（外网 7023 + 8311）")
     ap.add_argument("--from", dest="from_name", help="起点地名")
     ap.add_argument("--to", dest="to_name", help="终点地名")

@@ -67,7 +67,7 @@ python .cursor/skills/route-bigimage/scripts/route_to_bigimage.py --preset elect
 
 - `ROUTE_URL` 默认 `https://map.earthg.cn:7023/api/route`
 - `BIGIMAGE_HOST` 默认 `https://map.earthg.cn:8311`
-- `BIGIMAGE_TK` **必填**（出图凭证，用环境变量配置，不要写入代码库）
+- `BIGIMAGE_TK` 可选（服务端「瓦片收费=false」时可不传；开启收费后 GET 需要有效 tk）
 
 ## 手工流程
 
@@ -93,7 +93,7 @@ python .cursor/skills/route-bigimage/scripts/route_to_bigimage.py --preset elect
 
 - Skill / 脚本只访问 `map.earthg.cn:7023` 与 `map.earthg.cn:8311`，不用 `192.168.*`
 - 高德底图/注记由 8311 内部做 GCJ 对齐；用户矢量在叠影像前须已是 WGS84
-- 出图前确认已设置环境变量 `BIGIMAGE_TK`（勿把 tk 写进仓库）
+- `BIGIMAGE_TK` 默认不需要；仅收费模式打开时再配置
 
 ## 关于
 

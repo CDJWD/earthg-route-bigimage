@@ -19,7 +19,7 @@ Cursor Agent Skill：调用 [map.earthg.cn](https://map.earthg.cn) **算路 (702
 2. 将目录 `route-bigimage/` 复制到：
    - 项目内：`.cursor/skills/route-bigimage/`，或
    - 用户全局：`~/.cursor/skills/route-bigimage/`（Windows 多为 `%USERPROFILE%\.cursor\skills\route-bigimage\`）
-3. 设置出图凭证（必填）：
+3. （可选）若服务端开启了瓦片收费，再设置出图凭证：
 
 ```bash
 # Windows PowerShell
@@ -28,6 +28,8 @@ $env:BIGIMAGE_TK = "你的地图TK"
 # Linux / macOS
 export BIGIMAGE_TK=你的地图TK
 ```
+
+当前 EarthG 公开部署默认 **不收费、可不传 tk**。
 
 4. 在 Cursor 中直接说，例如：「生成一张双流机场到天府机场的路线图」。
 
@@ -76,7 +78,7 @@ python scripts/route_to_bigimage.py --preset electronic --from 双流机场 --to
 
 | 变量 | 默认 | 说明 |
 |------|------|------|
-| `BIGIMAGE_TK` | （无，必填） | BigImage 访问 tk |
+| `BIGIMAGE_TK` | （空，可选） | 仅当服务端开启「瓦片收费」时，bigimage GET 需要有效 tk；默认关闭则可不传 |
 | `BIGIMAGE_HOST` | `https://map.earthg.cn:8311` | 出图服务 |
 | `ROUTE_URL` | `https://map.earthg.cn:7023/api/route` | 算路服务 |
 
